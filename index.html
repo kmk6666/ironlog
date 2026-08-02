@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>IRON LOG - 筋トレ記録</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16171b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IRON LOG">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #16171b;
+    --surface: #1e2025;
+    --surface-2: #262930;
+    --border: #34373d;
+    --text: #ece8e1;
+    --text-muted: #93979f;
+    --gold: #c9a227;
+    --gold-soft: rgba(201,162,39,0.14);
+    --rust: #b9503f;
+    --rust-soft: rgba(185,80,63,0.14);
+    --steel: #6c8a9a;
+    --font-display: 'Oswald', 'Hiragino Sans', sans-serif;
+    --font-body: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic Medium', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  .app{ max-width: 780px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  .header{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 14px; margin-bottom: 18px;
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand-mark{
+    font-family: var(--font-display); font-weight:700; font-size:26px;
+    letter-spacing: 2px; color: var(--text);
+  }
+  .brand-mark span{ color: var(--gold); }
+  .brand-sub{ font-size:12px; color:var(--text-muted); letter-spacing:1px; }
+  .today-date{ font-family: var(--font-mono); font-size:13px; color:var(--text-muted); text-align:right; }
+  .today-date b{ color:var(--text); font-size:16px; display:block; }
+
+  .tabs{ display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--border); overflow-x:auto; }
+  .tab-btn{
+    background:none; border:none; color:var(--text-muted); font-family:var(--font-body);
+    font-size:14px; font-weight:500; padding:10px 14px; cursor:pointer; white-space:nowrap;
+    border-bottom:2px solid transparent; margin-bottom:-1px; transition:.15s;
+  }
+  .tab-btn:hover{ color:var(--text); }
+  .tab-btn.active{ color:var(--gold); border-bottom-color:var(--gold); }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; animation: fade .2s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:translateY(0);} }
+
+  .card{
+    background: var(--surface); border:1px solid var(--border); border-radius:6px;
+    padding:16px; margin-bottom:14px;
+  }
+  .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px; flex-wrap:wrap; }
+  .ex-name{ font-family:var(--font-display); font-size:19px; font-weight:600; letter-spacing:.3px; }
+  .ex-meta{ font-size:12px; color:var(--text-muted); font-family:var(--font-mono); }
+  .trend-badge{ font-family:var(--font-mono); font-size:12px; padding:3px 8px; border-radius:4px; white-space:nowrap; }
+  .trend-up{ background:var(--gold-soft); color:var(--gold); }
+  .trend-down{ background:var(--rust-soft); color:var(--rust); }
+  .trend-flat{ background:var(--surface-2); color:var(--text-muted); }
+
+  .prev-line{ font-size:12.5px; color:var(--text-muted); margin-bottom:10px; }
+  .prev-line b{ color:var(--text); font-family:var(--font-mono); font-weight:500; }
+
+  .swap-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .link-btn{ background:none; border:none; color:var(--gold); font-size:12px; cursor:pointer; padding:2px 0; text-decoration:underline; text-underline-offset:2px; }
+  .link-btn:hover{ color:#dcb238; }
+  .swap-note{ font-size:11.5px; color:var(--text-muted); }
+  .swap-picker{ display:none; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+  .swap-picker.open{ display:flex; }
+  .swap-picker select{ flex:1; min-width:140px; }
+
+  .sets-list{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .set-row{
+    display:flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:13.5px;
+    background:var(--surface-2); border-radius:4px; padding:6px 10px;
+  }
+  .set-row .set-idx{ color:var(--text-muted); width:20px; flex-shrink:0; }
+  .set-row .set-val{ flex:1; }
+  .set-row .muted{ color:var(--text-muted); font-size:11.5px; }
+  .drop-tag{ background:var(--rust-soft); color:var(--rust); font-size:10.5px; padding:2px 5px; border-radius:3px; margin-right:4px; }
+  .group-row{ flex-wrap:wrap; }
+  .rep-chip{
+    display:inline-flex; align-items:center; gap:3px; background:var(--gold-soft); color:var(--gold);
+    border-radius:3px; padding:2px 4px 2px 7px; margin:0 3px; font-size:12.5px;
+  }
+  .rep-x{ background:none; border:none; color:var(--gold); opacity:.6; cursor:pointer; font-size:10px; padding:1px 3px; }
+  .rep-x:hover{ opacity:1; color:var(--rust); }
+  .set-row button{
+    background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:15px; padding:2px 6px;
+  }
+  .set-row button:hover{ color:var(--rust); }
+  .no-sets{ font-size:12.5px; color:var(--text-muted); margin-bottom:8px; }
+
+  .set-input{ border-top:1px dashed var(--border); padding-top:12px; margin-top:4px; }
+  .mode-toggle{ display:flex; gap:6px; margin-bottom:10px; }
+  .mode-btn{
+    flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text-muted);
+    font-size:12.5px; font-weight:500; padding:7px 8px; border-radius:4px; cursor:pointer; transition:.15s;
+  }
+  .mode-btn.active{ background:var(--gold-soft); color:var(--gold); border-color:var(--gold); }
+  .steps-editor{ display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+  .step-row{ display:flex; align-items:center; gap:8px; }
+  .step-row input{
+    background:var(--bg); border:1px solid var(--border); color:var(--text);
+    font-family:var(--font-mono); font-size:14px; border-radius:4px; padding:8px 10px; width:0; flex:1;
+  }
+  .step-row input:focus{ outline:none; border-color:var(--gold); }
+  .step-row .unit{ font-size:12px; color:var(--text-muted); flex-shrink:0; }
+  .step-remove{ background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; flex-shrink:0; }
+  .step-remove:hover{ color:var(--rust); }
+  .set-input-actions{ display:flex; gap:8px; justify-content:flex-end; }
+
+  .btn{
+    font-family:var(--font-body); font-size:13.5px; font-weight:500; border-radius:4px; padding:8px 14px;
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text); cursor:pointer; transition:.15s;
+  }
+  .btn:hover{ border-color:var(--gold); }
+  .btn-primary{ background:var(--gold); color:#1c1c1c; border-color:var(--gold); font-weight:600; }
+  .btn-primary:hover{ background:#dcb238; }
+  .btn-ghost{ background:none; }
+  .btn-danger:hover{ border-color:var(--rust); color:var(--rust); }
+  .btn-sm{ padding:5px 10px; font-size:12.5px; }
+
+  .spark{ display:flex; align-items:flex-end; gap:3px; height:32px; margin:8px 0 2px; }
+  .spark-bar{ width:7px; background:var(--surface-2); border-radius:2px 2px 0 0; position:relative; }
+  .spark-bar.pr{ background:var(--gold); }
+  .spark-bar.cur{ outline:1px solid var(--text); }
+
+  .datebar{ display:flex; align-items:center; gap:12px; padding:12px 16px; }
+  .datebar-label{ font-size:13px; color:var(--text-muted); }
+  .datebar input[type=date]{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:4px; padding:7px 10px; font-family:var(--font-mono); font-size:13.5px;
+  }
+  .weekday-badge{
+    font-family:var(--font-mono); font-size:12.5px; background:var(--surface-2); color:var(--gold);
+    padding:4px 9px; border-radius:4px;
+  }
+
+  .plan-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .plan-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .chip{ background:var(--gold-soft); color:var(--gold); font-size:12.5px; padding:5px 10px; border-radius:20px; }
+  .rest-chip{ background:var(--surface-2); color:var(--text-muted); }
+
+  .section-title{ font-family:var(--font-display); font-size:14px; letter-spacing:.5px; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; }
+  .preset-grid{ display:flex; gap:8px; flex-wrap:wrap; }
+  .preset-btn{ font-family:var(--font-mono); }
+  .template-checks{ display:flex; flex-direction:column; gap:8px; }
+  .check-item{ display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer; }
+  .check-item input{ accent-color: var(--gold); width:16px; height:16px; }
+
+  .template-section{ margin-bottom:6px; }
+  .template-section-title{
+    font-family:var(--font-display); font-size:15px; letter-spacing:.5px; color:var(--gold);
+    margin: 18px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--border);
+  }
+
+  .settings-block{ background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 16px 16px; margin-bottom:14px; }
+  .settings-block summary{ font-family:var(--font-display); font-size:15px; letter-spacing:.3px; padding:14px 0; cursor:pointer; color:var(--text); }
+  .settings-block summary:hover{ color:var(--gold); }
+
+  .tpl-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:5px; padding:12px; margin-bottom:10px; }
+  .tpl-card-head{ display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+  .tpl-name{ flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:7px 10px; font-family:var(--font-body); font-size:14px; font-weight:600; }
+  .tpl-name:focus{ outline:none; border-color:var(--gold); }
+  .tpl-items{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  .tpl-item-row{ display:flex; align-items:center; gap:8px; font-size:13px; }
+  .tpl-item-name{ flex:1; }
+  .tpl-target{ width:100px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:6px 8px; font-family:var(--font-mono); font-size:12.5px; }
+  .tpl-add-item{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .tpl-add-item select{ flex:1; min-width:140px; }
+
+  .menu-item{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .menu-item input{
+    flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text);
+    border-radius:4px; padding:8px 10px; font-family:var(--font-body); font-size:14px;
+  }
+  .menu-item input:focus{ outline:none; border-color:var(--gold); }
+
+  .select-row{ display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  select{
+    background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:4px;
+    padding:8px 10px; font-family:var(--font-body); font-size:14px;
+  }
+  .stat-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .stat-box{ background:var(--surface-2); border-radius:5px; padding:10px 14px; flex:1; min-width:110px; }
+  .stat-box .label{ font-size:11px; color:var(--text-muted); }
+  .stat-box .value{ font-family:var(--font-mono); font-size:19px; margin-top:2px; }
+  .value.pos{ color:var(--gold); }
+  .value.neg{ color:var(--rust); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:7px 6px; border-bottom:1px solid var(--border); }
+  th{ color:var(--text-muted); font-weight:500; font-size:11.5px; letter-spacing:.5px; }
+  td.mono, th.mono{ font-family:var(--font-mono); }
+  tr.pr-row td:first-child{ color:var(--gold); }
+
+  .empty{ color:var(--text-muted); font-size:13.5px; text-align:center; padding:26px 10px; }
+  .empty-inline{ color:var(--text-muted); font-size:12.5px; padding:8px 0; }
+
+  .export-desc{ font-size:13px; color:var(--text-muted); margin-bottom:12px; }
+  .export-buttons{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background:var(--surface-2); border:1px solid var(--gold); color:var(--text);
+    padding:10px 18px; border-radius:6px; font-size:13.5px; opacity:0; pointer-events:none;
+    transition:opacity .25s; z-index:50;
+  }
+  .toast.show{ opacity:1; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+  @media (max-width:480px){
+    .brand-mark{ font-size:22px; }
+    .stat-box{ min-width:90px; }
+    .tpl-target{ width:80px; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">IRON<span>LOG</span></div>
+      <div class="brand-sub">筋トレ記録</div>
+    </div>
+    <div class="today-date"><b id="todayLabel">--</b>今日の日付</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="today">今日の記録</button>
+    <button class="tab-btn" data-tab="history">履歴・推移</button>
+    <button class="tab-btn" data-tab="menu">テンプレート</button>
+    <button class="tab-btn" data-tab="export">データ出力</button>
+  </div>
+
+  <div class="panel active" id="panel-today"></div>
+  <div class="panel" id="panel-history"></div>
+  <div class="panel" id="panel-menu"></div>
+  <div class="panel" id="panel-export"></div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'ironlog:data';
+const WD = ['日','月','火','水','木','金','土'];
+
+let state = { exercises: [], templates: [], presets: [], dayPlans: {}, entries: [] };
+let currentDate = todayStr();
+let activeTab = 'today';
+let historyExerciseId = null;
+let dropUi = {}; // exerciseId -> { mode:'normal'|'drop', rows:[{weight,reps}] }
+
+// ---------- date helpers ----------
+function todayStr(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function weekdayOf(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return WD[d.getDay()];
+}
+function fmtDate(s){
+  const [y,m,dd] = s.split('-');
+  return `${y}/${m}/${dd}（${weekdayOf(s)}）`;
+}
+function fmtDateShort(s){
+  const [y,m,dd] = s.split('-');
+  return `${m}/${dd}（${weekdayOf(s)}）`;
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+// ---------- default seed data (based on the user's actual routine) ----------
+function buildDefaultState(){
+  const names = [
+    'スミスベンチプレス','プレートアッパーチェストプレス','ペックフライ','スミスショルダープレス','ラテラルレイズ',
+    'オーバーヘッドケーブルエクステンション','Tバーロー','ラットプルダウン','プレートローイング','バーベルカール',
+    'ハンマーカール','レッグレイズ','ハックスクワット','レッグプレス','ルーマニアンデッドリフト','プローンレッグカール',
+    'レッグプレスカーフ','レッグエクステンション','ディップス','リアレイズ','ケーブルプレスダウン',
+    'ストレートアームプルダウン','プリーチャーカール','アブドミナル','ロータリートーソー','アブダクター','アダクター'
+  ];
+  const exercises = names.map(n=>({id: uid(), name:n}));
+  const byName = n => exercises.find(e=>e.name===n).id;
+
+  const templates = [
+    { id: uid(), name:'胸(A1)', items:[
+      {exerciseId:byName('スミスベンチプレス'), target:'3×6-8'},
+      {exerciseId:byName('プレートアッパーチェストプレス'), target:'3×10-12'},
+      {exerciseId:byName('ペックフライ'), target:'3×12-15'},
+    ]},
+    { id: uid(), name:'肩(A1)', items:[
+      {exerciseId:byName('スミスショルダープレス'), target:'2×6-8'},
+      {exerciseId:byName('ラテラルレイズ'), target:'4×12-15'},
+    ]},
+    { id: uid(), name:'三頭(A1)', items:[
+      {exerciseId:byName('オーバーヘッドケーブルエクステンション'), target:'3×12-15'},
+    ]},
+    { id: uid(), name:'背中(B1)', items:[
+      {exerciseId:byName('Tバーロー'), target:'3×6-8'},
+      {exerciseId:byName('ラットプルダウン'), target:'3×10-12'},
+      {exerciseId:byName('プレートローイング'), target:'3×10-12'},
+    ]},
+    { id: uid(), name:'二頭(B1)', items:[
+      {exerciseId:byName('バーベルカール'), target:'2×10-12'},
+      {exerciseId:byName('ハンマーカール'), target:'2×12-15'},
+    ]},
+    { id: uid(), name:'腹筋(B1)', items:[
+      {exerciseId:byName('レッグレイズ'), target:'2×15'},
+    ]},
+    { id: uid(), name:'脚(C1)', items:[
+      {exerciseId:byName('ハックスクワット'), target:'3×6-8'},
+      {exerciseId:byName('レッグプレス'), target:'3×10-12'},
+      {exerciseId:byName('ルーマニアンデッドリフト'), target:'3×6-8'},
+      {exerciseId:byName('プローンレッグカール'), target:'3×12-15'},
+      {exerciseId:byName('レッグプレスカーフ'), target:'4×12-15'},
+      {exerciseId:byName('レッグエクステンション'), target:'3×12-15'},
+    ]},
+    { id: uid(), name:'胸(A2)', items:[
+      {exerciseId:byName('プレートアッパーチェストプレス'), target:'3×10-12'},
+      {exerciseId:byName('ディップス'), target:'3×10-12'},
+      {exerciseId:byName('ペックフライ'), target:'2×12-15'},
+    ]},
+    { id: uid(), name:'肩(A2)', items:[
+      {exerciseId:byName('スミスショルダープレス'), target:'2×8-10'},
+      {exerciseId:byName('ラテラルレイズ'), target:'3×12-15'},
+      {exerciseId:byName('リアレイズ'), target:'3×15-20'},
+    ]},
+    { id: uid(), name:'三頭(A2)', items:[
+      {exerciseId:byName('ケーブルプレスダウン'), target:'3×15-20'},
+    ]},
+    { id: uid(), name:'背中(B2)', items:[
+      {exerciseId:byName('プレートローイング'), target:'3×10-12'},
+      {exerciseId:byName('ラットプルダウン'), target:'3×10-12'},
+      {exerciseId:byName('ストレートアームプルダウン'), target:'2×15'},
+    ]},
+    { id: uid(), name:'二頭(B2)', items:[
+      {exerciseId:byName('プリーチャーカール'), target:'2×10-12'},
+    ]},
+    { id: uid(), name:'腹筋(B2)', items:[
+      {exerciseId:byName('アブドミナル'), target:'2×15'},
+      {exerciseId:byName('ロータリートーソー'), target:'2×15'},
+    ]},
+    { id: uid(), name:'脚(C2)', items:[
+      {exerciseId:byName('レッグエクステンション'), target:'3×12-15'},
+      {exerciseId:byName('レッグプレス'), target:'3×10-12'},
+      {exerciseId:byName('プローンレッグカール'), target:'3×12-15'},
+      {exerciseId:byName('アブダクター'), target:'2×15-20'},
+      {exerciseId:byName('アダクター'), target:'2×15-20'},
+      {exerciseId:byName('レッグプレスカーフ'), target:'2×12-20'},
+    ]},
+  ];
+  const byTplName = n => templates.find(t=>t.name===n).id;
+  const presets = [
+    { id: uid(), name:'A1', templateIds:[byTplName('胸(A1)'), byTplName('肩(A1)'), byTplName('三頭(A1)')] },
+    { id: uid(), name:'B1', templateIds:[byTplName('背中(B1)'), byTplName('二頭(B1)'), byTplName('腹筋(B1)')] },
+    { id: uid(), name:'C1', templateIds:[byTplName('脚(C1)')] },
+    { id: uid(), name:'A2', templateIds:[byTplName('胸(A2)'), byTplName('肩(A2)'), byTplName('三頭(A2)')] },
+    { id: uid(), name:'B2', templateIds:[byTplName('背中(B2)'), byTplName('二頭(B2)'), byTplName('腹筋(B2)')] },
+    { id: uid(), name:'C2', templateIds:[byTplName('脚(C2)')] },
+  ];
+
+  return { exercises, templates, presets, dayPlans:{}, entries: [] };
+}
+
+// ---------- storage ----------
+// standalone PWA build: uses the browser's own localStorage so data lives on this
+// device only, with no dependency on Claude or any account/login.
+async function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      return migrate(parsed);
+    }
+  }catch(e){ /* first run or corrupted data */ }
+  return buildDefaultState();
+}
+
+function migrate(parsed){
+  if(parsed && Array.isArray(parsed.exercises) && Array.isArray(parsed.templates)){
+    parsed.presets = parsed.presets || [];
+    parsed.dayPlans = parsed.dayPlans || {};
+    parsed.entries = parsed.entries || [];
+    return parsed;
+  }
+  if(parsed && Array.isArray(parsed.menu)){
+    const exercises = parsed.menu.map(m=>({id:m.id, name:m.name}));
+    const entries = (parsed.entries||[]).map(e=>({
+      ...e,
+      sets: (e.sets||[]).map(s=> s.steps ? s : {type:'normal', steps:[{weight:s.weight, reps:s.reps}]})
+    }));
+    return { exercises, templates:[], presets:[], dayPlans:{}, entries };
+  }
+  return buildDefaultState();
+}
+
+async function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    showToast('保存に失敗しました（ストレージの空き容量を確認してください）');
+  }
+  maybeAutoSync();
+}
+
+// ---------- Google Sheets sync (optional) ----------
+const SYNC_CONFIG_KEY = 'ironlog:sync-config';
+function getSyncConfig(){
+  try{
+    const raw = localStorage.getItem(SYNC_CONFIG_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {url:'', enabled:false, lastSyncAt:null, lastStatus:null};
+}
+function saveSyncConfig(cfg){
+  try{ localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(cfg)); }catch(e){}
+}
+function buildSyncRows(){
+  const rows = [];
+  state.entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    const name = (exById(e.exerciseId)||{}).name || e.exerciseId;
+    e.sets.forEach((s,si)=>{
+      s.steps.forEach((st,pi)=>{
+        rows.push({date:e.date, exercise:name, set_no:si+1, set_type:s.type, step_no:pi+1, weight_kg:st.weight, reps:st.reps});
+      });
+    });
+  });
+  return rows;
+}
+let syncInFlight = false;
+async function syncToSheet(manual){
+  const cfg = getSyncConfig();
+  if(!cfg.url){
+    if(manual) showToast('先にスプレッドシートのURLを設定してください');
+    return;
+  }
+  if(syncInFlight) return;
+  syncInFlight = true;
+  try{
+    await fetch(cfg.url, {
+      method: 'POST',
+      mode: 'no-cors', // Apps Script webapps don't return CORS headers; no-cors lets the
+                        // request go through reliably, we just can't read the response back
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({rows: buildSyncRows()})
+    });
+    cfg.lastSyncAt = new Date().toISOString();
+    cfg.lastStatus = 'sent';
+  }catch(e){
+    cfg.lastStatus = 'error';
+  }
+  saveSyncConfig(cfg);
+  syncInFlight = false;
+  if(manual){
+    if(cfg.lastStatus==='sent') showToast('スプレッドシートへ送信しました（内容はシート側で確認してください）');
+    else showToast('送信に失敗しました。ネット接続とURLを確認してください');
+  }
+  if(document.getElementById('panel-export').classList.contains('active')) renderSyncStatus();
+}
+function maybeAutoSync(){
+  const cfg = getSyncConfig();
+  if(cfg.enabled && cfg.url) syncToSheet(false);
+}
+
+// ---------- data helpers ----------
+function exById(id){ return state.exercises.find(e=>e.id===id); }
+function tplById(id){ return state.templates.find(t=>t.id===id); }
+function entriesFor(exerciseId){
+  return state.entries.filter(e => e.exerciseId === exerciseId).sort((a,b)=> a.date.localeCompare(b.date));
+}
+function findEntry(exerciseId, date){
+  return state.entries.find(e=> e.exerciseId===exerciseId && e.date===date);
+}
+function getOrCreateEntry(exerciseId, date){
+  let e = findEntry(exerciseId, date);
+  if(!e){ e = { id: uid(), date, exerciseId, sets: [] }; state.entries.push(e); }
+  return e;
+}
+function repWeight(set){ return set.steps[0].weight; }
+function repReps(set){ return set.steps[0].reps; }
+function topSetOf(sets){
+  if(!sets || !sets.length) return null;
+  return sets.reduce((a,b)=> (repWeight(b) > repWeight(a) ? b : a), sets[0]);
+}
+function volumeOfSet(set){ return set.steps.reduce((sum,s)=> sum + s.weight*s.reps, 0); }
+function volumeOfSets(sets){ return sets.reduce((sum,s)=> sum + volumeOfSet(s), 0); }
+function estOneRM(w, r){ if(r<=0) return w; return Math.round(w * (1 + r/30)); }
+
+// group consecutive same-weight normal sets together (weight is usually fixed across straight sets,
+// so it reads better as "60kg × 10,9,6回" than three separate "60kg×10 / 60kg×9 / 60kg×6" rows)
+function groupSets(sets){
+  const groups = [];
+  sets.forEach((s, idx)=>{
+    const last = groups[groups.length-1];
+    if(s.type==='normal' && last && last.type==='normal' && last.weight===s.steps[0].weight){
+      last.items.push({reps: s.steps[0].reps, idx});
+    } else if(s.type==='normal'){
+      groups.push({type:'normal', weight:s.steps[0].weight, items:[{reps:s.steps[0].reps, idx}]});
+    } else {
+      groups.push({type:'drop', steps:s.steps, idx});
+    }
+  });
+  return groups;
+}
+function setsSummary(sets){
+  if(!sets.length) return '記録なし';
+  return groupSets(sets).map(g=>{
+    if(g.type==='drop') return 'D:'+g.steps.map(st=>`${st.weight}×${st.reps}`).join('→');
+    return `${g.weight}kg×[${g.items.map(it=>it.reps).join(',')}]`;
+  }).join(' / ');
+}
+function renderSetInline(s){
+  if(s.type==='drop'){
+    const chain = s.steps.map(st=>`${st.weight}kg×${st.reps}`).join(' → ');
+    return `<span class="drop-tag">DROP</span>${chain} <span class="muted">(トップ推定1RM ${estOneRM(s.steps[0].weight, s.steps[0].reps)}kg)</span>`;
+  }
+  const st = s.steps[0];
+  return `${st.weight}kg × ${st.reps}回 <span class="muted">(推定1RM ${estOneRM(st.weight, st.reps)}kg)</span>`;
+}
+function escapeHTML(s){ return String(s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escapeAttr(s){ return String(s).replace(/"/g,'&quot;'); }
+
+// ---------- rendering: overall ----------
+function render(){
+  document.getElementById('todayLabel').textContent = fmtDate(todayStr());
+  renderToday();
+  renderHistory();
+  renderTemplatesTab();
+  renderExport();
+}
+
+// ---------- TODAY panel ----------
+function dateBarHTML(){
+  return `
+    <div class="card datebar">
+      <span class="datebar-label">記録日</span>
+      <input type="date" id="dateInput" value="${currentDate}">
+      <span class="weekday-badge">${weekdayOf(currentDate)}曜日</span>
+    </div>`;
+}
+function bindDateBar(){
+  document.getElementById('dateInput').addEventListener('change', e=>{
+    currentDate = e.target.value || todayStr();
+    renderToday();
+  });
+}
+
+function getCoveredExerciseIds(plan){
+  const set = new Set();
+  if(plan && !plan.rest){
+    plan.templateIds.forEach(tid=>{
+      const t = tplById(tid);
+      if(t) t.items.forEach(it=>{
+        const sub = plan.substitutions && plan.substitutions[it.exerciseId];
+        set.add(sub ? sub.replacementId : it.exerciseId);
+      });
+    });
+  }
+  return set;
+}
+
+function planPickerHTML(){
+  return `
+  <div class="card">
+    <div class="section-title">プリセットから選ぶ</div>
+    <div class="preset-grid">
+      ${state.presets.map(p=>`<button class="btn preset-btn" data-preset="${p.id}">${escapeHTML(p.name)}</button>`).join('') || '<div class="empty-inline">プリセットがまだありません（テンプレートタブで作成できます）</div>'}
+    </div>
+    <div class="section-title" style="margin-top:18px;">または、テンプレートを個別に組み合わせる</div>
+    <div class="template-checks">
+      ${state.templates.map(t=>`
+        <label class="check-item">
+          <input type="checkbox" value="${t.id}" class="tpl-check">
+          <span>${escapeHTML(t.name)}</span>
+        </label>`).join('') || '<div class="empty-inline">テンプレートがまだありません</div>'}
+    </div>
+    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary" id="applyTemplatesBtn">この組み合わせで開始</button>
+      <button class="btn btn-ghost" id="restDayBtn">休養日にする</button>
+    </div>
+  </div>`;
+}
+function bindPlanPicker(){
+  document.querySelectorAll('[data-preset]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const preset = state.presets.find(p=>p.id===btn.getAttribute('data-preset'));
+      if(!preset) return;
+      state.dayPlans[currentDate] = {templateIds: preset.templateIds.slice()};
+      await saveState();
+      renderToday();
+    });
+  });
+  const applyBtn = document.getElementById('applyTemplatesBtn');
+  if(applyBtn) applyBtn.addEventListener('click', async ()=>{
+    const ids = Array.from(document.querySelectorAll('.tpl-check:checked')).map(c=>c.value);
+    if(ids.length===0){ showToast('テンプレートを1つ以上選んでください'); return; }
+    state.dayPlans[currentDate] = {templateIds: ids};
+    await saveState();
+    renderToday();
+  });
+  const restBtn = document.getElementById('restDayBtn');
+  if(restBtn) restBtn.addEventListener('click', async ()=>{
+    state.dayPlans[currentDate] = {rest:true, templateIds:[]};
+    await saveState();
+    renderToday();
+  });
+}
+
+function renderToday(){
+  const panel = document.getElementById('panel-today');
+  const plan = state.dayPlans[currentDate];
+
+  if(!plan){
+    panel.innerHTML = dateBarHTML() + planPickerHTML();
+    bindDateBar();
+    bindPlanPicker();
+    return;
+  }
+
+  let planBarHTML;
+  if(plan.rest){
+    planBarHTML = `<div class="plan-bar"><div class="plan-chips"><span class="chip rest-chip">休養日</span></div><button class="btn btn-sm" id="changePlanBtn">メニューを選び直す</button></div>`;
+  } else {
+    const names = plan.templateIds.map(id=> (tplById(id)||{}).name).filter(Boolean);
+    planBarHTML = `<div class="plan-bar"><div class="plan-chips">${names.map(n=>`<span class="chip">${escapeHTML(n)}</span>`).join('')}</div><button class="btn btn-sm" id="changePlanBtn">メニューを変更</button></div>`;
+  }
+
+  let bodyHTML = '';
+  if(plan.rest){
+    bodyHTML = `<div class="empty">今日は休養日として記録されています。トレーニングする場合は「メニューを選び直す」から選択してください。</div>`;
+  } else {
+    bodyHTML = plan.templateIds.map(tid=>{
+      const t = tplById(tid);
+      if(!t) return '';
+      const cards = t.items.map(it=> exerciseCardHTML(it.exerciseId, it.target, plan)).join('');
+      return `<div class="template-section"><div class="template-section-title">${escapeHTML(t.name)}</div>${cards}</div>`;
+    }).join('');
+
+    const covered = getCoveredExerciseIds(plan);
+    const orphanEntries = state.entries.filter(e=> e.date===currentDate && e.sets.length>0 && !covered.has(e.exerciseId));
+    if(orphanEntries.length){
+      bodyHTML += `<div class="template-section"><div class="template-section-title">その他の記録</div>${orphanEntries.map(e=>exerciseCardHTML(e.exerciseId, null)).join('')}</div>`;
+    }
+  }
+
+  panel.innerHTML = dateBarHTML() + planBarHTML + bodyHTML;
+  bindDateBar();
+  const changeBtn = document.getElementById('changePlanBtn');
+  if(changeBtn) changeBtn.addEventListener('click', async ()=>{
+    delete state.dayPlans[currentDate];
+    await saveState();
+    renderToday();
+  });
+  if(!plan.rest){
+    const covered = getCoveredExerciseIds(plan);
+    covered.forEach(exId => bindExerciseCard(exId));
+    state.entries.filter(e=> e.date===currentDate && e.sets.length>0 && !covered.has(e.exerciseId))
+      .forEach(e=> bindExerciseCard(e.exerciseId));
+    bindSwapControls(plan);
+  }
+}
+
+function exerciseCardHTML(slotExId, target, plan){
+  const sub = plan && plan.substitutions && plan.substitutions[slotExId];
+  const exId = sub ? sub.replacementId : slotExId;
+  const ex = exById(exId);
+  const name = ex ? ex.name : '(削除済み種目)';
+  const allSessions = entriesFor(exId).filter(e=>e.sets.length>0);
+  const past = allSessions.filter(e=> e.date < currentDate);
+  const prev = past.length ? past[past.length-1] : null;
+  const todayEntry = findEntry(exId, currentDate);
+  const todaySets = todayEntry ? todayEntry.sets : [];
+
+  const prevTopSet = prev ? topSetOf(prev.sets) : null;
+  const todayTopSet = topSetOf(todaySets);
+
+  let trendHTML = '';
+  if(prevTopSet && todayTopSet){
+    const diff = repWeight(todayTopSet) - repWeight(prevTopSet);
+    if(diff > 0) trendHTML = `<span class="trend-badge trend-up">▲ +${diff}kg</span>`;
+    else if(diff < 0) trendHTML = `<span class="trend-badge trend-down">▼ ${diff}kg</span>`;
+    else trendHTML = `<span class="trend-badge trend-flat">→ 同重量</span>`;
+  }
+
+  const sparkHTML = sparkline(allSessions.filter(e=>e.date<=currentDate), currentDate);
+
+  let swapHTML = '';
+  if(plan){
+    const slotEx = exById(slotExId);
+    swapHTML = `
+    <div class="swap-row">
+      ${sub ? `<span class="swap-note">${escapeHTML((slotEx||{}).name || '元の種目')}の代わり</span><button class="link-btn" data-revert-swap="${slotExId}">元に戻す</button>` : ''}
+      <button class="link-btn" data-open-swap="${slotExId}">種目変更</button>
+    </div>
+    <div class="swap-picker" id="swap-picker-${slotExId}">
+      <select id="swap-select-${slotExId}">
+        <option value="">種目を選択...</option>
+        ${state.exercises.map(e=>`<option value="${e.id}" ${e.id===exId?'selected':''}>${escapeHTML(e.name)}</option>`).join('')}
+      </select>
+      <button class="btn btn-sm btn-primary" data-confirm-swap="${slotExId}">決定</button>
+      <button class="btn btn-sm btn-ghost" data-cancel-swap="${slotExId}">キャンセル</button>
+    </div>`;
+  }
+
+  return `
+  <div class="card ex-card" data-ex="${exId}">
+    <div class="card-head">
+      <div>
+        <div class="ex-name">${escapeHTML(name)}</div>
+        <div class="ex-meta">${target?`目標 ${escapeHTML(target)} ・ `:''}記録回数: ${allSessions.length}回</div>
+      </div>
+      ${trendHTML}
+    </div>
+    ${swapHTML}
+    ${prev? `<div class="prev-line">前回(${fmtDateShort(prev.date)}): <b>${setsSummary(prev.sets)}</b></div>` : `<div class="prev-line">記録はまだありません</div>`}
+    ${sparkHTML}
+    <div class="sets-list" id="sets-${exId}">
+      ${groupSets(todaySets).map(g=>{
+        if(g.type==='drop'){
+          const s = todaySets[g.idx];
+          return `<div class="set-row">
+            <span class="set-val">${renderSetInline(s)}</span>
+            <button data-del="${g.idx}" title="削除">✕</button>
+          </div>`;
+        }
+        const totalReps = g.items.reduce((sum,it)=>sum+it.reps,0);
+        const bestReps = Math.max(...g.items.map(it=>it.reps));
+        return `<div class="set-row group-row">
+          <span class="set-val">
+            ${g.weight}kg ×
+            ${g.items.map(it=>`<span class="rep-chip">${it.reps}<button class="rep-x" data-del="${it.idx}" title="このセットを削除">✕</button></span>`).join('')}
+            回 <span class="muted">（合計${totalReps}回・推定1RM ${estOneRM(g.weight,bestReps)}kg）</span>
+          </span>
+        </div>`;
+      }).join('') || `<div class="no-sets">本日のセットはまだありません</div>`}
+    </div>
+    ${setInputBlockHTML(exId)}
+  </div>`;
+}
+
+function bindSwapControls(plan){
+  document.querySelectorAll('[data-open-swap]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const slotId = btn.getAttribute('data-open-swap');
+      const picker = document.getElementById(`swap-picker-${slotId}`);
+      if(picker) picker.classList.toggle('open');
+    });
+  });
+  document.querySelectorAll('[data-cancel-swap]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const slotId = btn.getAttribute('data-cancel-swap');
+      const picker = document.getElementById(`swap-picker-${slotId}`);
+      if(picker) picker.classList.remove('open');
+    });
+  });
+  document.querySelectorAll('[data-confirm-swap]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const slotId = btn.getAttribute('data-confirm-swap');
+      const sel = document.getElementById(`swap-select-${slotId}`);
+      const chosen = sel.value;
+      if(!chosen){ showToast('種目を選択してください'); return; }
+      plan.substitutions = plan.substitutions || {};
+      if(chosen === slotId) delete plan.substitutions[slotId];
+      else plan.substitutions[slotId] = {replacementId: chosen};
+      await saveState();
+      renderToday();
+      renderHistory();
+    });
+  });
+  document.querySelectorAll('[data-revert-swap]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const slotId = btn.getAttribute('data-revert-swap');
+      if(plan.substitutions) delete plan.substitutions[slotId];
+      await saveState();
+      renderToday();
+      renderHistory();
+    });
+  });
+}
+
+function bindExerciseCard(exId){
+  const card = document.querySelector(`.card.ex-card[data-ex="${exId}"]`);
+  if(!card) return;
+  card.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = parseInt(btn.getAttribute('data-del'),10);
+      const entry = findEntry(exId, currentDate);
+      if(entry){
+        entry.sets.splice(idx,1);
+        await saveState();
+        renderToday();
+        renderHistory();
+      }
+    });
+  });
+  bindSetInput(exId);
+}
+
+function sparkline(sessions, currentDate){
+  const list = sessions.filter(s => s.date <= currentDate).slice(-6);
+  if(list.length < 2) return '';
+  const weights = list.map(s => repWeight(topSetOf(s.sets)));
+  const max = Math.max(...weights), min = Math.min(...weights);
+  const range = (max - min) || 1;
+  let runningMax = -Infinity;
+  const bars = list.map((s)=>{
+    const w = repWeight(topSetOf(s.sets));
+    const h = 6 + Math.round(((w-min)/range) * 26);
+    const isPR = w >= runningMax;
+    runningMax = Math.max(runningMax, w);
+    const isCur = s.date === currentDate;
+    return `<div class="spark-bar${isPR?' pr':''}${isCur?' cur':''}" style="height:${h}px" title="${fmtDateShort(s.date)}: ${w}kg"></div>`;
+  }).join('');
+  return `<div class="spark">${bars}</div>`;
+}
+
+// ---------- set input widget (normal / drop) ----------
+function getUi(exId){
+  if(!dropUi[exId]) dropUi[exId] = {mode:'normal', rows:[{weight:'',reps:''}]};
+  return dropUi[exId];
+}
+function resetUi(exId){ dropUi[exId] = {mode:'normal', rows:[{weight:'',reps:''}]}; }
+// after logging a normal set, keep the weight filled in and just clear reps —
+// straight sets are usually done at the same weight, so this saves re-typing it each time
+function resetUiKeepWeight(exId, weight){ dropUi[exId] = {mode:'normal', rows:[{weight:String(weight), reps:''}]}; }
+
+function stepsEditorInnerHTML(exId){
+  const ui = getUi(exId);
+  return ui.rows.map((r,i)=>`
+    <div class="step-row">
+      <input type="number" step="0.5" min="0" placeholder="重量" value="${r.weight}" data-step-w="${i}">
+      <span class="unit">kg ×</span>
+      <input type="number" step="1" min="0" placeholder="回数" value="${r.reps}" data-step-r="${i}">
+      <span class="unit">回</span>
+      ${ui.mode==='drop' && ui.rows.length>1 ? `<button class="step-remove" data-step-del="${i}">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function setInputBlockHTML(exId){
+  const ui = getUi(exId);
+  return `
+    <div class="set-input" data-ex="${exId}">
+      <div class="mode-toggle">
+        <button class="mode-btn ${ui.mode==='normal'?'active':''}" data-mode-btn="normal">通常セット</button>
+        <button class="mode-btn ${ui.mode==='drop'?'active':''}" data-mode-btn="drop">ドロップセット</button>
+      </div>
+      <div class="steps-editor" id="steps-${exId}">${stepsEditorInnerHTML(exId)}</div>
+      <div class="set-input-actions">
+        ${ui.mode==='drop' ? `<button class="btn btn-sm" data-addstep>＋もう一段階</button>` : ''}
+        <button class="btn btn-primary btn-sm" data-commit>セット追加</button>
+      </div>
+    </div>
+  `;
+}
+
+function bindSetInput(exId){
+  const root = document.querySelector(`.set-input[data-ex="${exId}"]`);
+  if(!root) return;
+  const ui = getUi(exId);
+
+  root.querySelectorAll('[data-mode-btn]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const mode = btn.getAttribute('data-mode-btn');
+      ui.mode = mode;
+      if(mode==='drop' && ui.rows.length<2) ui.rows.push({weight:'',reps:''});
+      if(mode==='normal') ui.rows = [ui.rows[0] || {weight:'',reps:''}];
+      refreshSetInput(exId);
+    });
+  });
+  bindStepsEditorEvents(exId);
+
+  const addBtn = root.querySelector('[data-addstep]');
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    ui.rows.push({weight:'',reps:''});
+    refreshSetInput(exId);
+  });
+
+  root.querySelector('[data-commit]').addEventListener('click', async ()=>{
+    for(const r of ui.rows){
+      const w = parseFloat(r.weight), rp = parseInt(r.reps,10);
+      if(isNaN(w) || isNaN(rp) || w<0 || rp<0){
+        showToast('重量と回数を正しく入力してください');
+        return;
+      }
+    }
+    const steps = ui.rows.map(r=>({weight: parseFloat(r.weight), reps: parseInt(r.reps,10)}));
+    const entry = getOrCreateEntry(exId, currentDate);
+    const committedMode = ui.mode;
+    entry.sets.push({type: committedMode, steps});
+    if(committedMode==='normal') resetUiKeepWeight(exId, steps[0].weight);
+    else resetUi(exId);
+    await saveState();
+    renderToday();
+    renderHistory();
+    showToast('記録しました');
+  });
+}
+
+function bindStepsEditorEvents(exId){
+  const container = document.getElementById(`steps-${exId}`);
+  if(!container) return;
+  const ui = getUi(exId);
+  container.querySelectorAll('[data-step-w]').forEach(inp=>{
+    inp.addEventListener('input', e=>{ ui.rows[parseInt(e.target.getAttribute('data-step-w'))].weight = e.target.value; });
+  });
+  container.querySelectorAll('[data-step-r]').forEach(inp=>{
+    inp.addEventListener('input', e=>{ ui.rows[parseInt(e.target.getAttribute('data-step-r'))].reps = e.target.value; });
+  });
+  container.querySelectorAll('[data-step-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = parseInt(btn.getAttribute('data-step-del'));
+      ui.rows.splice(idx,1);
+      refreshSetInput(exId);
+    });
+  });
+}
+
+function refreshSetInput(exId){
+  const root = document.querySelector(`.set-input[data-ex="${exId}"]`);
+  if(!root) return;
+  root.outerHTML = setInputBlockHTML(exId);
+  bindSetInput(exId);
+}
+
+// ---------- HISTORY panel ----------
+function runningMaxAt(sessions, date){
+  let m = -Infinity;
+  for(const s of sessions){
+    if(s.date > date) break;
+    m = Math.max(m, repWeight(topSetOf(s.sets)));
+    if(s.date===date) break;
+  }
+  return m;
+}
+
+function renderHistory(){
+  const panel = document.getElementById('panel-history');
+  if(state.exercises.length===0){
+    panel.innerHTML = `<div class="empty">種目が登録されていません。</div>`;
+    return;
+  }
+  if(!historyExerciseId || !exById(historyExerciseId)){
+    historyExerciseId = state.exercises[0].id;
+  }
+  const sessions = entriesFor(historyExerciseId).filter(e=>e.sets.length>0);
+
+  let statsHTML = '';
+  let chartHTML = '';
+  let tableRows = '';
+
+  if(sessions.length===0){
+    statsHTML = `<div class="empty">この種目の記録はまだありません。</div>`;
+  } else {
+    const first = topSetOf(sessions[0].sets);
+    const last = topSetOf(sessions[sessions.length-1].sets);
+    const diff = repWeight(last) - repWeight(first);
+    const pct = repWeight(first)>0 ? Math.round((diff/repWeight(first))*1000)/10 : 0;
+
+    statsHTML = `
+      <div class="stat-row">
+        <div class="stat-box"><div class="label">記録回数</div><div class="value">${sessions.length}回</div></div>
+        <div class="stat-box"><div class="label">開始時トップ重量</div><div class="value">${repWeight(first)}kg</div></div>
+        <div class="stat-box"><div class="label">直近トップ重量</div><div class="value">${repWeight(last)}kg</div></div>
+        <div class="stat-box"><div class="label">変化</div><div class="value ${diff>0?'pos':diff<0?'neg':''}">${diff>=0?'+':''}${diff}kg (${pct>=0?'+':''}${pct}%)</div></div>
+      </div>`;
+
+    chartHTML = buildChartSVG(sessions);
+
+    tableRows = sessions.slice().reverse().map(s=>{
+      const t = topSetOf(s.sets);
+      const isPR = repWeight(t) >= runningMaxAt(sessions, s.date);
+      const vol = volumeOfSets(s.sets);
+      return `<tr class="${isPR?'pr-row':''}">
+        <td class="mono">${fmtDateShort(s.date)}${isPR?' ★':''}</td>
+        <td>${setsSummary(s.sets)}</td>
+        <td class="mono">${vol}kg</td>
+        <td class="mono">${estOneRM(repWeight(t),repReps(t))}kg</td>
+      </tr>`;
+    }).join('');
+  }
+
+  panel.innerHTML = `
+    <div class="select-row">
+      <select id="historySelect">
+        ${state.exercises.map(m=>`<option value="${m.id}" ${m.id===historyExerciseId?'selected':''}>${escapeHTML(m.name)}</option>`).join('')}
+      </select>
+    </div>
+    ${statsHTML}
+    ${chartHTML}
+    ${sessions.length ? `
+    <div class="card">
+      <table>
+        <thead><tr><th>日付</th><th>内容</th><th class="mono">総重量</th><th class="mono">推定1RM</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>` : ''}
+  `;
+  document.getElementById('historySelect').addEventListener('change', e=>{
+    historyExerciseId = e.target.value;
+    renderHistory();
+  });
+}
+
+function buildChartSVG(sessions){
+  const W = 660, H = 160, padL = 36, padR = 12, padT = 14, padB = 22;
+  const pts = sessions.map(s => repWeight(topSetOf(s.sets)));
+  const max = Math.max(...pts), min = Math.min(...pts);
+  const range = (max-min) || 1;
+  const stepX = pts.length>1 ? (W-padL-padR)/(pts.length-1) : 0;
+  const toX = i => padL + i*stepX;
+  const toY = v => padT + (H-padT-padB) * (1 - (v-min)/range);
+
+  let runningMax = -Infinity;
+  const circles = pts.map((v,i)=>{
+    const isPR = v >= runningMax;
+    runningMax = Math.max(runningMax, v);
+    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${isPR?4.5:3}" fill="${isPR?'#c9a227':'#6c8a9a'}" />`;
+  }).join('');
+  const path = pts.map((v,i)=> `${i===0?'M':'L'} ${toX(i).toFixed(1)} ${toY(v).toFixed(1)}`).join(' ');
+
+  return `
+  <div class="card" style="overflow-x:auto;">
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:${H}px; display:block;">
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#34373d" stroke-width="1"/>
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#34373d" stroke-width="1"/>
+      <text x="4" y="${padT+4}" fill="#93979f" font-size="10" font-family="IBM Plex Mono, monospace">${max}kg</text>
+      <text x="4" y="${H-padB}" fill="#93979f" font-size="10" font-family="IBM Plex Mono, monospace">${min}kg</text>
+      <path d="${path}" fill="none" stroke="#c9a227" stroke-width="2"/>
+      ${circles}
+    </svg>
+  </div>`;
+}
+
+// ---------- TEMPLATES tab (templates / presets / exercise master) ----------
+function renderTemplatesTab(){
+  const panel = document.getElementById('panel-menu');
+  panel.innerHTML = `
+    <details class="settings-block" open>
+      <summary>テンプレート管理（部位ごとのメニュー）</summary>
+      <div id="templatesList"></div>
+      <button class="btn" id="addTemplateBtn">＋ テンプレートを追加</button>
+    </details>
+    <details class="settings-block">
+      <summary>プリセット管理（テンプレートの組み合わせ）</summary>
+      <div id="presetsList"></div>
+      <button class="btn" id="addPresetBtn">＋ プリセットを追加</button>
+    </details>
+    <details class="settings-block">
+      <summary>種目マスタ（全種目一覧）</summary>
+      <div id="exerciseList"></div>
+      <button class="btn" id="addExerciseBtn">＋ 種目を追加</button>
+    </details>
+  `;
+  renderTemplatesList();
+  renderPresetsList();
+  renderExerciseList();
+  document.getElementById('addTemplateBtn').addEventListener('click', async ()=>{
+    const name = prompt('テンプレート名を入力してください（例: 胸・肩・三頭）');
+    if(name && name.trim()){
+      state.templates.push({id:uid(), name:name.trim(), items:[]});
+      await saveState();
+      renderTemplatesList();
+    }
+  });
+  document.getElementById('addPresetBtn').addEventListener('click', async ()=>{
+    const name = prompt('プリセット名を入力してください（例: A1）');
+    if(name && name.trim()){
+      state.presets.push({id:uid(), name:name.trim(), templateIds:[]});
+      await saveState();
+      renderPresetsList();
+    }
+  });
+  document.getElementById('addExerciseBtn').addEventListener('click', async ()=>{
+    const name = prompt('種目名を入力してください');
+    if(name && name.trim()){
+      state.exercises.push({id:uid(), name:name.trim()});
+      await saveState();
+      renderExerciseList();
+      renderTemplatesList();
+    }
+  });
+}
+
+function renderTemplatesList(){
+  const wrap = document.getElementById('templatesList');
+  wrap.innerHTML = state.templates.map(t=>`
+    <div class="tpl-card" data-tpl="${t.id}">
+      <div class="tpl-card-head">
+        <input type="text" class="tpl-name" value="${escapeAttr(t.name)}">
+        <button class="btn btn-sm btn-danger" data-del-tpl>削除</button>
+      </div>
+      <div class="tpl-items">
+        ${t.items.map((it,i)=>`
+          <div class="tpl-item-row">
+            <span class="tpl-item-name">${escapeHTML((exById(it.exerciseId)||{}).name || '(不明)')}</span>
+            <input type="text" class="tpl-target" data-idx="${i}" value="${escapeAttr(it.target||'')}" placeholder="例: 3×6-8">
+            <button class="step-remove" data-del-item="${i}">✕</button>
+          </div>
+        `).join('') || `<div class="empty-inline">種目が未登録です</div>`}
+      </div>
+      <div class="tpl-add-item">
+        <select class="tpl-ex-select">
+          <option value="">種目を選択...</option>
+          ${state.exercises.map(e=>`<option value="${e.id}">${escapeHTML(e.name)}</option>`).join('')}
+        </select>
+        <input type="text" class="tpl-new-target" placeholder="例: 3×6-8" style="width:100px;">
+        <button class="btn btn-sm" data-add-item>追加</button>
+      </div>
+    </div>
+  `).join('') || `<div class="empty-inline">テンプレートがまだありません</div>`;
+
+  wrap.querySelectorAll('.tpl-card').forEach(card=>{
+    const tid = card.getAttribute('data-tpl');
+    const t = state.templates.find(x=>x.id===tid);
+    card.querySelector('.tpl-name').addEventListener('change', async e=>{
+      if(e.target.value.trim()){ t.name = e.target.value.trim(); await saveState(); renderPresetsList(); }
+    });
+    card.querySelector('[data-del-tpl]').addEventListener('click', async ()=>{
+      if(confirm('このテンプレートを削除しますか？（プリセットからも外れます）')){
+        state.templates = state.templates.filter(x=>x.id!==tid);
+        state.presets.forEach(p=> p.templateIds = p.templateIds.filter(id=>id!==tid));
+        await saveState();
+        renderTemplatesList(); renderPresetsList();
+      }
+    });
+    card.querySelectorAll('[data-del-item]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const idx = parseInt(btn.getAttribute('data-del-item'));
+        t.items.splice(idx,1);
+        await saveState();
+        renderTemplatesList();
+      });
+    });
+    card.querySelectorAll('.tpl-target').forEach(inp=>{
+      inp.addEventListener('change', async e=>{
+        const idx = parseInt(e.target.getAttribute('data-idx'));
+        t.items[idx].target = e.target.value;
+        await saveState();
+      });
+    });
+    card.querySelector('[data-add-item]').addEventListener('click', async ()=>{
+      const sel = card.querySelector('.tpl-ex-select');
+      const tgt = card.querySelector('.tpl-new-target');
+      if(!sel.value){ showToast('種目を選択してください'); return; }
+      t.items.push({exerciseId: sel.value, target: tgt.value.trim()});
+      await saveState();
+      renderTemplatesList();
+    });
+  });
+}
+
+function renderPresetsList(){
+  const wrap = document.getElementById('presetsList');
+  wrap.innerHTML = state.presets.map(p=>`
+    <div class="tpl-card" data-preset="${p.id}">
+      <div class="tpl-card-head">
+        <input type="text" class="tpl-name" value="${escapeAttr(p.name)}">
+        <button class="btn btn-sm btn-danger" data-del-preset>削除</button>
+      </div>
+      <div class="template-checks">
+        ${state.templates.map(t=>`
+          <label class="check-item">
+            <input type="checkbox" value="${t.id}" class="preset-tpl-check" ${p.templateIds.includes(t.id)?'checked':''}>
+            <span>${escapeHTML(t.name)}</span>
+          </label>`).join('') || '<div class="empty-inline">先にテンプレートを作成してください</div>'}
+      </div>
+    </div>
+  `).join('') || `<div class="empty-inline">プリセットがまだありません</div>`;
+
+  wrap.querySelectorAll('[data-preset]').forEach(card=>{
+    const pid = card.getAttribute('data-preset');
+    const p = state.presets.find(x=>x.id===pid);
+    card.querySelector('.tpl-name').addEventListener('change', async e=>{
+      if(e.target.value.trim()){ p.name = e.target.value.trim(); await saveState(); }
+    });
+    card.querySelector('[data-del-preset]').addEventListener('click', async ()=>{
+      if(confirm('このプリセットを削除しますか？')){
+        state.presets = state.presets.filter(x=>x.id!==pid);
+        await saveState();
+        renderPresetsList();
+      }
+    });
+    card.querySelectorAll('.preset-tpl-check').forEach(chk=>{
+      chk.addEventListener('change', async e=>{
+        if(e.target.checked) p.templateIds.push(e.target.value);
+        else p.templateIds = p.templateIds.filter(id=>id!==e.target.value);
+        await saveState();
+      });
+    });
+  });
+}
+
+function renderExerciseList(){
+  const wrap = document.getElementById('exerciseList');
+  wrap.innerHTML = state.exercises.map(e=>`
+    <div class="menu-item" data-exm="${e.id}">
+      <input type="text" value="${escapeAttr(e.name)}">
+      <button class="btn btn-sm btn-danger" data-del-ex>削除</button>
+    </div>
+  `).join('') || `<div class="empty-inline">種目がまだありません</div>`;
+  wrap.querySelectorAll('[data-exm]').forEach(row=>{
+    const id = row.getAttribute('data-exm');
+    const ex = state.exercises.find(x=>x.id===id);
+    row.querySelector('input').addEventListener('change', async e=>{
+      if(e.target.value.trim()){ ex.name = e.target.value.trim(); await saveState(); renderHistory(); renderTemplatesList(); }
+    });
+    row.querySelector('[data-del-ex]').addEventListener('click', async ()=>{
+      if(confirm('この種目をマスタから削除しますか？（テンプレートからも外れます。過去の記録は残ります）')){
+        state.exercises = state.exercises.filter(x=>x.id!==id);
+        state.templates.forEach(t=> t.items = t.items.filter(it=>it.exerciseId!==id));
+        await saveState();
+        renderExerciseList(); renderTemplatesList();
+      }
+    });
+  });
+}
+
+// ---------- EXPORT panel ----------
+function renderExport(){
+  const panel = document.getElementById('panel-export');
+  const cfg = getSyncConfig();
+  panel.innerHTML = `
+    <div class="card">
+      <div class="export-desc">全ての記録データをファイルとして書き出せます。CSVは表計算ソフトで、JSONはこのアプリへの読み込みや他のツールでの利用に向いています。</div>
+      <div class="export-buttons">
+        <button class="btn btn-primary" id="csvBtn">CSVでダウンロード</button>
+        <button class="btn" id="jsonBtn">JSONでダウンロード</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="export-desc">記録するたびに、Googleスプレッドシートへ自動でバックアップできます（Google Apps Scriptの設定が別途必要です）。</div>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <input type="text" id="sheetUrlInput" placeholder="Apps ScriptのWebアプリURLを貼り付け" value="${escapeAttr(cfg.url||'')}" style="flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:8px 10px; font-family:var(--font-mono); font-size:12.5px;">
+        <button class="btn btn-sm" id="saveSheetUrlBtn">保存</button>
+      </div>
+      <label class="check-item" style="margin-bottom:10px;">
+        <input type="checkbox" id="autoSyncToggle" ${cfg.enabled?'checked':''}>
+        <span>記録するたびに自動で同期する</span>
+      </label>
+      <div class="export-buttons">
+        <button class="btn btn-primary" id="syncNowBtn">今すぐ同期</button>
+      </div>
+      <div id="syncStatus" class="ex-meta" style="margin-top:8px;"></div>
+    </div>
+  `;
+  document.getElementById('csvBtn').addEventListener('click', downloadCSV);
+  document.getElementById('jsonBtn').addEventListener('click', downloadJSON);
+
+  document.getElementById('saveSheetUrlBtn').addEventListener('click', ()=>{
+    const c = getSyncConfig();
+    c.url = document.getElementById('sheetUrlInput').value.trim();
+    saveSyncConfig(c);
+    showToast('URLを保存しました');
+  });
+  document.getElementById('autoSyncToggle').addEventListener('change', e=>{
+    const c = getSyncConfig();
+    c.enabled = e.target.checked;
+    saveSyncConfig(c);
+    showToast(c.enabled ? '自動同期をオンにしました' : '自動同期をオフにしました');
+  });
+  document.getElementById('syncNowBtn').addEventListener('click', ()=> syncToSheet(true));
+  renderSyncStatus();
+}
+
+function renderSyncStatus(){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  const cfg = getSyncConfig();
+  if(!cfg.url){ el.textContent = '未設定'; return; }
+  if(!cfg.lastSyncAt){ el.textContent = 'まだ同期していません'; return; }
+  const t = new Date(cfg.lastSyncAt);
+  const p = n=>String(n).padStart(2,'0');
+  const timeStr = `${t.getFullYear()}/${p(t.getMonth()+1)}/${p(t.getDate())} ${p(t.getHours())}:${p(t.getMinutes())}`;
+  el.textContent = cfg.lastStatus==='sent' ? `最終送信: ${timeStr}` : `送信失敗: ${timeStr}`;
+}
+
+function downloadBlob(content, filename, type){
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadCSV(){
+  const rows = [['date','exercise','set_no','set_type','step_no','weight_kg','reps']];
+  state.entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    const name = (exById(e.exerciseId)||{}).name || e.exerciseId;
+    e.sets.forEach((s,si)=>{
+      s.steps.forEach((st,pi)=>{
+        rows.push([e.date, name, si+1, s.type, pi+1, st.weight, st.reps]);
+      });
+    });
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadBlob(csv, `ironlog_${todayStr()}.csv`, 'text/csv;charset=utf-8');
+  showToast('CSVをダウンロードしました');
+}
+
+function downloadJSON(){
+  downloadBlob(JSON.stringify(state, null, 2), `ironlog_${todayStr()}.json`, 'application/json');
+  showToast('JSONをダウンロードしました');
+}
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.getAttribute('data-tab');
+    document.getElementById(`panel-${activeTab}`).classList.add('active');
+    if(activeTab==='export') renderExport();
+  });
+});
+
+// ---------- init ----------
+(async function init(){
+  document.getElementById('panel-today').innerHTML = `<div class="empty">読み込み中...</div>`;
+  state = await loadState();
+  render();
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{ /* offline support unavailable, app still works */ });
+  });
+}
+</script>
+</body>
+</html>
