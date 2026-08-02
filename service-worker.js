@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ironlog-v1';
+const CACHE_NAME = 'ironlog-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -24,22 +24,37 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// cache-first for the app shell, so it opens instantly and works with no signal;
-// network calls (Google Fonts) fall back to cache if offline, but never block a fresh load
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
+
+  const isAppShell = event.request.mode === 'navigate' || event.request.destination === 'document';
+
+  if (isAppShell) {
+    // network-first for the app itself: whenever online, always load the latest
+    // version so updates (like this one) show up immediately on next reload.
+    // only fall back to the cached copy if there's no network (offline use).
+    event.respondWith(
+      fetch(event.request)
         .then((res) => {
-          if (res && res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return res;
         })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // cache-first for static assets (icons, manifest) — these rarely change
+  event.respondWith(
+    caches.match(event.request).then((cached) =>
+      cached || fetch(event.request).then((res) => {
+        if (res && res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return res;
+      })
+    )
   );
 });
